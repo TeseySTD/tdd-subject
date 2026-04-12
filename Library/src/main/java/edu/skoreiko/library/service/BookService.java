@@ -4,6 +4,8 @@ import edu.skoreiko.library.models.Book;
 import edu.skoreiko.library.repository.BookRepository;
 import edu.skoreiko.library.request.BookCreateRequest;
 import edu.skoreiko.library.request.BookUpdateRequest;
+import edu.skoreiko.library.response.ApiResponse;
+import edu.skoreiko.library.response.BaseMetaData;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -17,8 +19,6 @@ import java.util.List;
  * @class BookService
  * @since 12.04.2026 - 12.24
  */
-
-
 @Service
 @RequiredArgsConstructor
 public class BookService {
@@ -95,5 +95,32 @@ public class BookService {
 
     public void deleteAll() {
         bookRepository.deleteAll();
+    }
+
+    // ------------------------- ApiResponse Methods -------------------------
+
+    public ApiResponse<BaseMetaData, Book> getByIdAsApiResponse(String id) {
+        Book book = bookRepository.findById(id).orElse(null);
+        if (book != null) {
+            return new ApiResponse<>(new BaseMetaData(200, true), book);
+        }
+        return new ApiResponse<>(new BaseMetaData(404, false, "Book not found"));
+    }
+
+    public ApiResponse<BaseMetaData, Book> getAllAsApiResponse() {
+        List<Book> all = bookRepository.findAll();
+        BaseMetaData meta = new BaseMetaData(200, true);
+        return ApiResponse.<BaseMetaData, Book>builder()
+                .meta(meta)
+                .data(all)
+                .build();
+    }
+
+    public ApiResponse<BaseMetaData, Book> updateAsApiResponse(Book book) {
+        if (book.getId() != null && bookRepository.existsById(book.getId())) {
+            Book updated = bookRepository.save(book);
+            return new ApiResponse<>(new BaseMetaData(200, true), updated);
+        }
+        return new ApiResponse<>(new BaseMetaData(404, false, "Cannot update: Book not found"));
     }
 }
