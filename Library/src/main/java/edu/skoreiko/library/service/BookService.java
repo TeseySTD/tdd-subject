@@ -3,10 +3,16 @@ package edu.skoreiko.library.service;
 import edu.skoreiko.library.models.Book;
 import edu.skoreiko.library.repository.BookRepository;
 import edu.skoreiko.library.request.BookCreateRequest;
+import edu.skoreiko.library.request.BookPageRequest;
 import edu.skoreiko.library.request.BookUpdateRequest;
 import edu.skoreiko.library.response.ApiResponse;
 import edu.skoreiko.library.response.BaseMetaData;
+import edu.skoreiko.library.response.PaginationMetaData;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -122,5 +128,26 @@ public class BookService {
             return new ApiResponse<>(new BaseMetaData(200, true), updated);
         }
         return new ApiResponse<>(new BaseMetaData(404, false, "Cannot update: Book not found"));
+    }
+
+    public ApiResponse<PaginationMetaData, Book> getItemsPage(BookPageRequest request) {
+        Pageable pageable = PageRequest.of(request.page(), request.size(),
+                Sort.by(Sort.Direction.DESC, "id"));
+
+        Page<Book> page = bookRepository.findAll(pageable);
+
+        PaginationMetaData metaData = new PaginationMetaData();
+        metaData.setCode(200);
+        metaData.setSuccess(true);
+
+        metaData.setNumber(page.getNumber());
+        metaData.setSize(page.getSize());
+        metaData.setTotalPages(page.getTotalPages());
+        metaData.setTotalElements(page.getTotalElements());
+
+        metaData.setFirst(page.isFirst());
+        metaData.setLast(page.isLast());
+
+        return new ApiResponse<>(metaData, page.getContent());
     }
 }
