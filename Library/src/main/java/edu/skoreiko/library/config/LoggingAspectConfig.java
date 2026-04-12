@@ -1,0 +1,50 @@
+package edu.skoreiko.library.config;
+
+import lombok.extern.slf4j.Slf4j;
+import org.aspectj.lang.JoinPoint;
+import org.aspectj.lang.annotation.*;
+import org.springframework.stereotype.Component;
+
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Map;
+import java.util.WeakHashMap;
+
+/**
+ * @author Rout
+ * @version 1.0.0
+ * @project Library
+ * @class LoggingAspectConfig
+ * @since 12.04.2026 - 15.39
+ */
+
+@Aspect
+@Component
+@Slf4j
+public class LoggingAspectConfig {
+
+    private final Map<Throwable, Boolean> loggedExceptions = Collections.synchronizedMap(new WeakHashMap<>());
+
+    @Pointcut("execution(* edu.skoreiko.library..*.*(..))")
+    public void methodsPointcut() {
+    }
+
+    @Before("methodsPointcut()")
+    public void logBeforeMethod(JoinPoint joinPoint) {
+        String className = joinPoint.getTarget().getClass().getSimpleName();
+        String methodName = joinPoint.getSignature().getName();
+        Object[] args = joinPoint.getArgs();
+        log.info("Entering method: {}.{} with arguments: {}",
+                className, methodName, Arrays.toString(args));
+
+    }
+
+    @AfterReturning(pointcut = "methodsPointcut()", returning = "result")
+    public void logAfterMethod(JoinPoint joinPoint, Object result) {
+        String className = joinPoint.getTarget().getClass().getSimpleName();
+        String methodName = joinPoint.getSignature().getName();
+        log.info("Method completed: {}.{} with result: {}",
+                className, methodName, result);
+    }
+
+}

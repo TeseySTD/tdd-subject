@@ -9,6 +9,7 @@ import edu.skoreiko.library.response.ApiResponse;
 import edu.skoreiko.library.response.BaseMetaData;
 import edu.skoreiko.library.response.PaginationMetaData;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -25,6 +26,8 @@ import java.util.List;
  * @class BookService
  * @since 12.04.2026 - 12.24
  */
+
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class BookService {
