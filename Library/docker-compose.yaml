@@ -1,0 +1,14 @@
+name: library-tdd
+
+services:
+  library.db:
+    container_name: library-database
+    image: mongo:latest
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb:/data/db
+
+volumes:
+  mongodb:
