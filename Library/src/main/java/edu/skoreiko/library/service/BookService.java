@@ -143,11 +143,24 @@ public class BookService {
         metaData.setCode(200);
         metaData.setSuccess(true);
 
+        // Check if the requested page is out of range
+        if (request.page() >= page.getTotalPages() && page.getTotalPages() > 0) {
+            log.warn("Out of range: Requested page {} but max page is {}", request.page(), page.getTotalPages() - 1);
+
+            // Fallback to the last available page (index is totalPages - 1)
+            int lastPageIndex = page.getTotalPages() - 1;
+            pageable = PageRequest.of(lastPageIndex, request.size(), Sort.by(Sort.Direction.DESC, "id"));
+            page = bookRepository.findAll(pageable);
+
+            metaData.setCode(404);
+            metaData.setSuccess(false);
+            metaData.setErrorMessage("Maximal page for the size is " + page.getTotalPages());
+        }
+
         metaData.setNumber(page.getNumber());
         metaData.setSize(page.getSize());
         metaData.setTotalPages(page.getTotalPages());
         metaData.setTotalElements(page.getTotalElements());
-
         metaData.setFirst(page.isFirst());
         metaData.setLast(page.isLast());
 

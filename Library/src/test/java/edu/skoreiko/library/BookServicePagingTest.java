@@ -1,13 +1,17 @@
 package edu.skoreiko.library;
 
 import edu.skoreiko.library.models.Book;
+import edu.skoreiko.library.repository.BookRepository;
 import edu.skoreiko.library.request.BookPageRequest;
 import edu.skoreiko.library.response.ApiResponse;
 import edu.skoreiko.library.response.PaginationMetaData;
 import edu.skoreiko.library.service.BookService;
 import org.junit.jupiter.api.*;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.system.CapturedOutput;
+import org.springframework.boot.test.system.OutputCaptureExtension;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -21,13 +25,16 @@ import static org.junit.jupiter.api.Assertions.*;
  * @class BookServicePagingTest
  * @since 12.04.2026 - 15.29
  */
-
+@ExtendWith(OutputCaptureExtension.class)
 @SpringBootTest
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class BookServicePagingTest {
 
     @Autowired
     private BookService underTest;
+
+    @Autowired
+    private BookRepository bookRepository;
 
     @BeforeEach
     void setUp() {
@@ -98,20 +105,52 @@ class BookServicePagingTest {
 
     // 4
     @Test
-    void whenPageValueIsOutOfRangeThenDataListIsEmpty() {
+    void whenRequestIsIncorrectThenGiveTheLastPage() {
         // given
-        BookPageRequest request = new BookPageRequest(100, 10);
+        BookPageRequest request = new BookPageRequest(9, 4);
+        List<Book> allSorted = bookRepository.findAll(org.springframework.data.domain.Sort.by(org.springframework.data.domain.Sort.Direction.DESC, "id"));
+        String expectedLastItemId = allSorted.get(29).getId();
 
         // when
         ApiResponse<PaginationMetaData, Book> response = underTest.getItemsPage(request);
 
         // then
+        assertNotNull(response);
+        assertNotNull(response.getMeta());
+
+        assertEquals(404, response.getMeta().getCode());
+        assertFalse(response.getMeta().isSuccess());
+        assertNotNull(response.getMeta().getErrorMessage());
+        assertTrue(response.getMeta().getErrorMessage()
+                .contains("Maximal page for the size is " + response.getMeta().getTotalPages()));
+
+        assertEquals(7, response.getMeta().getNumber());
+        assertEquals(4, response.getMeta().getSize());
+        assertEquals(30, response.getMeta().getTotalElements());
+        assertEquals(8, response.getMeta().getTotalPages());
+        assertFalse(response.getMeta().isFirst());
+        assertTrue(response.getMeta().isLast());
+
         assertNotNull(response.getData());
-        assertTrue(response.getData().isEmpty());
-        assertEquals(100, response.getMeta().getNumber());
+        assertFalse(response.getData().isEmpty());
+        assertEquals(2, response.getData().size());
+        assertEquals(expectedLastItemId, response.getData().get(1).getId());
     }
 
     // 5
+    @Test
+    void testLoggingWhenOutOfRange(CapturedOutput output) {
+        // given
+        BookPageRequest request = new BookPageRequest(9, 4);
+
+        // when
+        underTest.getItemsPage(request);
+
+        // then
+        assertTrue(output.toString().contains("Out of range"));
+    }
+
+    // 6
     @Test
     void whenRequestMiddlePageThenFirstAndLastAreFalse() {
         // given
@@ -126,7 +165,7 @@ class BookServicePagingTest {
         assertEquals(10, response.getData().size());
     }
 
-    // 6
+    // 7
     @Test
     void whenPageSizeIsOneThenTotalPagesIsThirty() {
         // given
@@ -140,7 +179,7 @@ class BookServicePagingTest {
         assertEquals(1, response.getData().size());
     }
 
-    // 7
+    // 8
     @Test
     void whenPageSizeIsLargerThanTotalThenIsFirstAndLastAreTrue() {
         // given
@@ -156,7 +195,7 @@ class BookServicePagingTest {
         assertEquals(1, response.getMeta().getTotalPages());
     }
 
-    // 8
+    // 9
     @Test
     void checkSortingOrderIsDescById() {
         // given
@@ -167,11 +206,10 @@ class BookServicePagingTest {
 
         // then
         assertNotNull(response.getData().get(0).getId());
-        // In DESC sorting, the first item should be different from the one in ASC sorting
         assertTrue(response.getMeta().isSuccess());
     }
 
-    // 9
+    // 10
     @Test
     void whenRequestingSecondPageThenDataIsDifferentFromFirstPage() {
         // given
@@ -186,7 +224,7 @@ class BookServicePagingTest {
         assertNotEquals(res1.getData().get(0).getId(), res2.getData().get(0).getId());
     }
 
-    // 10
+    // 11
     @Test
     void checkTotalElementsConsistencyAcrossDifferentPages() {
         // given
